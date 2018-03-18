@@ -7,7 +7,7 @@ This tutorial will help you building a VPN-enabled wireless network. If you subs
 - 1 x Raspberry Pi. I prefer model 3 for built-in wifi capability. If you're using older model, please refer to [this link](https://elinux.org/RPi_USB_Wi-Fi_Adapters). Please note the wifi dongle must support AP mode https://wiki.gentoo.org/wiki/Hostapd
 
 ```shell
-root #iw list | grep "Supported interface modes" -A 8
+$sudo iw list | grep "Supported interface modes" -A 8
         Supported interface modes:
                  * IBSS
                  * managed
@@ -26,22 +26,18 @@ root #iw list | grep "Supported interface modes" -A 8
 
 ## Setup
 
-```shell
+```
 $sudo apt-get update
 $sudo apt-get install hostapd isc-dhcp-server openvpn
 ```
 
 ### Configure DHCP server
 
-Backup the current dhcpd config
-```shell
+Backup the current dhcpd config:
+```
 $sudo cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf.backup
 ```
-Edit the config file
-```shell
-$sudo nano /etc/dhcp/dhcpd.conf
-```
-Tell this DHCP that it's the main DHCP server for the local network by uncomment this line:
+Edit `/etc/dhcp/dhcpd.conf` file, tell this DHCP that it's the main DHCP server to the local network by uncomment this line:
 ```
 #authoritative;
 ```
@@ -58,25 +54,16 @@ subnet 172.17.10.0 netmask 255.255.255.0 {
 }
 ```
 This is saying we're assigning the subnet `172.17.10.10-172.17.10.50` and the default gateway for that network is `172.17.10.1`  
-Next, we need to tell which interface should be listening and responding to DHCP requests, aka managing the network. Edit the config file `isc-dhcp-server`:
-```shell
-$sudo nano /etc/default/isc-dhcp-server
+Next, we need to tell which interface should be listening and responding to DHCP requests, aka managing the network. Edit the config file `/etc/default/isc-dhcp-server`, add `wlan0` to `INTERFACESv4`
 ```
-Adding `wlan0` to `INTERFACES`
+INTERFACESv4="wlan0"
 ```
-INTERFACES="wlan0"
-```
-In order to let `wlan0` to be the managing interface for the wireless network, it should be configured with static ip.
-
-Backup the config file:
+In order to let `wlan0` to be the managing interface for the wireless network, it should be configured with static ip.  
+Backup the interfaces:
 ```
 $sudo cp /etc/network/interfaces /etc/network/interfaces.backup
 ```
-Edit the interface:
-```
-$sudo nano /etc/network/interfaces
-```
-Define wlan0 as static and eth0 as dhcp:
+Edit `/etc/network/interfaces`, define wlan0 as static and eth0 as dhcp:
 ```
 allow-hotplug eth0
 iface eth0 inet dhcp
@@ -92,14 +79,20 @@ Verify the config by bringing the wlan0 down then up. You might need to try this
 $sudo ifdown wlan0
 $sudo ifup wlan0
 ```
-... And check the information with `ifconfig` command.
+And doublecheck the information with `ifconfig` command.
+```
+$sudo ifconfig wlan0
+wlan0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        inet 172.17.10.1  netmask 255.255.255.0  broadcast 172.17.10.255
+        ether e8:4e:06:45:43:a6  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+```
 
 ### Configure Access Point
-Create `hostapd.conf` file:
-```
-$sudo nano /etc/hostapd/hostapd.conf
-```
-Put those information to this new file to define your wireless network:
+Create `/etc/hostapd/hostapd.conf` file, put those information to this new file to define your wireless network:
 ```
 interface=wlan0
 hw_mode=g
@@ -114,11 +107,7 @@ rsn_pairwise=CCMP
 ssid=WiPiN
 wpa_passphrase=1234567890
 ```
-We need to tell hostapd where to look at the config file by editing `hostapd` default file:
-```
-$sudo nano /etc/default/hostapd
-```
-Add `/etc/hostapd/hostapd.conf` to `DAEMON_CONF` like this, don't forget to uncomment the line:
+We need to tell hostapd where to look at the config file by editing `/etc/default/hostapd` default file. Add `/etc/hostapd/hostapd.conf` to `DAEMON_CONF` like this, don't forget to uncomment the line:
 ```
 DAEMON_CONF="/etc/hostapd/hostapd.conf"
 ```
@@ -152,20 +141,16 @@ $cd /etc/openvpn
 $sudo wget https://torguard.net/downloads/OpenVPN-UDP.zip
 $sudo unzip -j OpenVPN-UDP.zip
 ```
-Then add a line to each of the configuration files above to tell where to look at the credentials by this shell script:
+Then add a line to each of the configuration files above to tell where to look for the credentials by issuing this shell script:
 ```
 $sudo sed -i '/auth-user-pass/cauth-user-pass user.txt' *.ovpn
 ```
-Next, create the file mentioned above `user.txt`:
-```
-$sudo nano user.txt
-```
-And put your TorGuard username & password in each line, for example:
+Next, create the file mentioned above `user.txt` and put your TorGuard username & password in each line, for example:
 ```
 JohnDoe@example.com
 CatDog123
 ```
-You don't want anybody other than the author to access it, then it needs a better permission:
+You don't want anybody other than the author to access it, so it needs a better permission:
 ```
 $sudo chmod 700 user.txt
 ```
@@ -185,3 +170,44 @@ Add openvpn daemon & iptables rules above line `exit 0` in `rc.local` file :
 sudo openvpn --daemon --cd /etc/openvpn --config TorGuard.USA-LA.ovpn
 sudo iptables-restore < /etc/iptables.ipv4.nat
 ```
+Now try rebooting to verify & troubleshoot.
+```
+$sudo reboot
+```
+
+### Verify
+Firstly, the interfaces:
+```
+$sudo ifconfig
+eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.0.15  netmask 255.255.255.0  broadcast 192.168.0.255
+...
+tun0: flags=4305<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST>  mtu 1500
+        inet 10.35.0.10  netmask 255.255.255.255  destination 10.35.0.9
+...
+wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 172.17.10.1  netmask 255.255.255.0  broadcast 172.17.10.255
+```
+Your output might have slightly different tun0 & eth0 ip address.
+
+Next, confirm hostapd, dhcpd, and openvpn are running
+```
+$sudo systemctl status hostapd
+● hostapd.service - LSB: Advanced IEEE 802.11 management daemon
+   Loaded: loaded (/etc/init.d/hostapd; generated; vendor preset: enabled)
+   Active: active (running) since Sun 2018-03-18 12:24:08 PDT; 2min 2s ago
+```
+```
+$sudo systemctl status isc-dhcp-server
+● isc-dhcp-server.service - LSB: DHCP server
+   Loaded: loaded (/etc/init.d/isc-dhcp-server; generated; vendor preset: enabled)
+   Active: active (running) since Sun 2018-03-18 12:30:18 PDT; 1s ago
+```
+```
+$sudo systemctl status openvpn
+● openvpn.service - OpenVPN service
+   Loaded: loaded (/lib/systemd/system/openvpn.service; enabled; vendor preset: enabled)
+   Active: active (exited) since Sun 2018-03-18 12:24:07 PDT; 8min ago
+```
+
+Finally, try connecting to your WiPiN wifi with the password provided. Accessing www.iplocation.net to verify your location if it matches with your vpn setting.
