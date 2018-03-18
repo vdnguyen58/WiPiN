@@ -211,3 +211,9 @@ $sudo systemctl status openvpn
 ```
 
 Finally, try connecting to your WiPiN wifi with the password provided. Accessing www.iplocation.net to verify your location if it matches with your vpn setting.
+
+## References
+- https://thepi.io/how-to-use-your-raspberry-pi-as-a-wireless-access-point/
+- https://thepi.io/how-to-use-your-raspberry-pi-as-a-vpn-router/
+- https://medium.com/@edoardo849/turn-a-raspberrypi-3-into-a-wifi-router-hotspot-41b03500080e
+- https://torguard.net/knowledgebase.php?action=displayarticle&id=174
