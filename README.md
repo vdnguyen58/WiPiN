@@ -23,6 +23,7 @@ $sudo iw list | grep "Supported interface modes" -A 8
 - VPN subscription. In this tutorial I'll use TorGuard as an example.
 - hostapd: to host your wireless network.
 - isc-dhcp-server: dhcp server.
+- openvpn: vpn client.
 
 ## Setup
 
@@ -54,7 +55,7 @@ subnet 172.17.10.0 netmask 255.255.255.0 {
 }
 ```
 This is saying we're assigning the subnet `172.17.10.10-172.17.10.50` and the default gateway for that network is `172.17.10.1`  
-Next, we need to tell which interface should be listening and responding to DHCP requests, aka managing the network. Edit the config file `/etc/default/isc-dhcp-server`, add `wlan0` to `INTERFACESv4`
+Next, we need to tell which interface should be listening and responding to DHCP requests, aka managing the network. Edit the config file `/etc/default/isc-dhcp-server`, add `wlan0` to `INTERFACESv4`:
 ```
 INTERFACESv4="wlan0"
 ```
@@ -92,7 +93,7 @@ wlan0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
 ```
 
 ### Configure Access Point
-Create `/etc/hostapd/hostapd.conf` file, put those information to this new file to define your wireless network:
+Create `/etc/hostapd/hostapd.conf` file, put these information to this new file to define your wireless network:
 ```
 interface=wlan0
 hw_mode=g
@@ -170,7 +171,7 @@ Add openvpn daemon & iptables rules above line `exit 0` in `rc.local` file :
 sudo openvpn --daemon --cd /etc/openvpn --config TorGuard.USA-LA.ovpn
 sudo iptables-restore < /etc/iptables.ipv4.nat
 ```
-Now try rebooting to verify & troubleshoot.
+Now try rebooting to verify & troubleshoot:
 ```
 $sudo reboot
 ```
@@ -190,7 +191,7 @@ wlan0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
 ```
 Your output might have slightly different tun0 & eth0 ip address.
 
-Next, confirm hostapd, dhcpd, and openvpn are running
+Secondly, confirm hostapd, dhcpd, and openvpn are running
 ```
 $sudo systemctl status hostapd
 ● hostapd.service - LSB: Advanced IEEE 802.11 management daemon
@@ -217,3 +218,5 @@ Finally, try connecting to your WiPiN wifi with the password provided. Accessing
 - https://thepi.io/how-to-use-your-raspberry-pi-as-a-vpn-router/
 - https://medium.com/@edoardo849/turn-a-raspberrypi-3-into-a-wifi-router-hotspot-41b03500080e
 - https://torguard.net/knowledgebase.php?action=displayarticle&id=174
+- https://wiki.gentoo.org/wiki/Hostapd
+- https://help.ubuntu.com/community/isc-dhcp-server
